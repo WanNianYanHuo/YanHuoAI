@@ -1,0 +1,17 @@
+# 忽略内容
+中期检查/
+开题报告/
+论文初稿/
+往期文档/
+python/env/
+frontend/node_modules/
+__pycache__/
+dist/
+.vscode/
+.kiro/
+
+# 忽略文件
+*.pyc
+*.db
+*.faiss
+*.json

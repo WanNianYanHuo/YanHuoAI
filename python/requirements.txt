@@ -1,0 +1,37 @@
+# 核心框架 - Haystack 2.x 原生支持 Pydantic v2
+haystack-ai>=2.0.0
+
+# 向量数据库 - Haystack 2.x FAISS 集成
+faiss-haystack>=0.1.0  # Haystack 2.x 的 FAISS 集成包
+faiss-cpu>=1.7.0  # 如果有GPU，可以使用 faiss-gpu
+
+# 嵌入模型相关
+transformers>=4.32.0
+sentence-transformers>=3.0.0  # Haystack 2.x 需要 3.0+
+huggingface-hub>=0.15.0
+
+# HTTP请求（DashScope API 需要）
+requests>=2.28.0
+
+# 数据处理
+pandas>=1.5.0
+numpy>=1.21.0
+
+# 其他工具
+tqdm>=4.64.0
+
+# 检索相关
+rank-bm25>=0.2.2
+jieba>=0.42.1
+
+# API 服务（供 Java 后端调用）- Pydantic v2
+fastapi>=0.100.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+uvicorn>=0.23.0
+
+# 文档处理
+python-docx>=0.8.11  # Word 文档解析
+
+# DashScope API（阿里云）
+# 注意：requests 已包含在上面，无需额外安装

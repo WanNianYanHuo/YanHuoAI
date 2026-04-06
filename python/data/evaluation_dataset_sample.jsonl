@@ -1,0 +1,10 @@
+{"question": "什么是感冒？", "ground_truth": "感冒是一种常见的上呼吸道感染疾病，主要由病毒引起，症状包括鼻塞、流涕、咳嗽、发热等。", "category": "基础概念", "difficulty": "easy"}
+{"question": "中医如何治疗失眠？", "ground_truth": "中医治疗失眠主要从心、肝、脾、肾等脏腑入手，常用方法包括中药调理、针灸、推拿等，需要辨证论治。", "category": "治疗方法", "difficulty": "medium"}
+{"question": "四物汤的组成是什么？", "ground_truth": "四物汤由当归、川芎、白芍、熟地黄四味药组成，是补血调经的经典方剂。", "category": "方剂", "difficulty": "easy"}
+{"question": "什么是气虚？", "ground_truth": "气虚是中医术语，指人体正气不足，主要表现为神疲乏力、气短懒言、自汗、易感冒等症状。", "category": "基础概念", "difficulty": "easy"}
+{"question": "针灸治疗头痛的常用穴位有哪些？", "ground_truth": "针灸治疗头痛常用穴位包括百会、太阳、风池、合谷、太冲等，需要根据头痛类型选择不同穴位。", "category": "治疗方法", "difficulty": "medium"}
+{"question": "六味地黄丸的功效是什么？", "ground_truth": "六味地黄丸具有滋阴补肾的功效，主要用于治疗肾阴亏虚引起的腰膝酸软、头晕耳鸣、盗汗遗精等症状。", "category": "方剂", "difficulty": "medium"}
+{"question": "什么是血瘀证？", "ground_truth": "血瘀证是中医证候之一，指血液运行不畅或瘀滞，常见症状包括疼痛固定、舌质紫暗、脉涩等。", "category": "基础概念", "difficulty": "medium"}
+{"question": "如何区分风寒感冒和风热感冒？", "ground_truth": "风寒感冒表现为恶寒重、发热轻、无汗、头痛、鼻塞流清涕；风热感冒表现为发热重、恶寒轻、有汗、咽喉肿痛、鼻塞流黄涕。", "category": "诊断", "difficulty": "hard"}
+{"question": "人参的主要功效是什么？", "ground_truth": "人参具有大补元气、复脉固脱、补脾益肺、生津安神的功效，是补气第一要药。", "category": "中药", "difficulty": "easy"}
+{"question": "什么是阴阳？", "ground_truth": "阴阳是中医理论的核心概念，是对自然界相互关联的事物和现象对立统一关系的概括，是中医认识和分析疾病的基本方法。", "category": "基础概念", "difficulty": "hard"}
