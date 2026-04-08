@@ -4,22 +4,20 @@ import { getToken, getUser } from '../api/auth';
 const routes = [
   { 
     path: '/', 
-    name: 'Home', 
-    component: () => import('../views/Home.vue'), 
-    meta: { title: '首页', requiresAuth: true } 
+    redirect: '/chat'
   },
-  { 
-    path: '/login', 
-    name: 'Login', 
-    component: () => import('../views/Login.vue'), 
-    meta: { title: '登录', guest: true } 
-  },
-  { 
-    path: '/register', 
-    name: 'Register', 
-    component: () => import('../views/Register.vue'), 
-    meta: { title: '注册', guest: true } 
-  },
+  // { 
+  //   path: '/login', 
+  //   name: 'Login', 
+  //   component: () => import('../views/Login.vue'), 
+  //   meta: { title: '登录', guest: true } 
+  // },
+  // { 
+  //   path: '/register', 
+  //   name: 'Register', 
+  //   component: () => import('../views/Register.vue'), 
+  //   meta: { title: '注册', guest: true } 
+  // },
   { 
     path: '/chat', 
     name: 'Chat', 
@@ -41,6 +39,11 @@ const routes = [
   { 
     path: '/kb', 
     redirect: '/manage' 
+  },
+  // 管理员默认入口
+  {
+    path: '/admin-home',
+    redirect: '/manage',
   },
 ];
 
@@ -85,29 +88,46 @@ router.beforeEach((to, from, next) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   }
+
+  // 根路径根据角色重定向（管理员→管理页，普通用户→问答页）
+  if (to.path === '/') {
+    if (token && isValidToken && user?.role === 'admin') {
+      next('/manage');
+      return;
+    }
+    next('/chat');
+    return;
+  }
   
   // 检查是否需要登录
   if (to.meta.requiresAuth) {
     if (!token || !isValidToken) {
-      console.log('Redirecting to login: no valid token');
-      next({
-        path: '/login',
-        query: { redirect: to.fullPath } // 保存原始路径，登录后跳转
-      });
-      return;
+      console.log('Not logged in, but proceeding to route.');
+      // 不再重定向到登录页
+      // next({
+      //   path: '/login',
+      //   query: { redirect: to.fullPath } // 保存原始路径，登录后跳转
+      // });
+      // return;
     }
   }
   
   // 检查是否需要管理员权限
   if (to.meta.requiresAdmin) {
     if (!token || !isValidToken || !user || user.role !== 'admin') {
-      console.log('Redirecting to login: admin required');
+      console.log('Redirecting to chat: admin required');
       next({
-        path: '/login',
+        path: '/chat',
         query: { redirect: to.fullPath, error: 'admin_required' }
       });
       return;
     }
+  }
+
+  // 管理员账号不允许进入问答页
+  if (to.name === 'Chat' && token && isValidToken && user?.role === 'admin') {
+    next({ path: '/manage' });
+    return;
   }
   
   // 检查是否是访客页面（已登录用户不应该访问登录/注册页）

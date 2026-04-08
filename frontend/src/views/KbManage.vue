@@ -1,10 +1,56 @@
 <template>
-  <div class="page">
-    <div class="top-actions">
-      <el-button size="small" type="primary" plain @click="goToChat">知识库问答</el-button>
-    </div>
-    
-    <h1>知识库管理</h1>
+  <div class="page admin-shell">
+    <aside class="admin-sidebar" :class="{ collapsed: isSidebarCollapsed }">
+      <div class="admin-sidebar-header">
+        <button class="icon-btn" @click="toggleSidebar" :title="isSidebarCollapsed ? '展开侧栏' : '收起侧栏'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.42 1.41l4.58-4.58a1 1 0 0 0 0-1.42l-4.58-4.58a1 1 0 0 0-1.42 0Z"/>
+          </svg>
+        </button>
+        <span v-if="!isSidebarCollapsed" class="admin-sidebar-title">管理设置</span>
+      </div>
+      <div class="admin-nav">
+        <button class="nav-btn" @click="goToManage" :title="isSidebarCollapsed ? '知识库管理' : null">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M5 5a2 2 0 0 1 2-2h9a1 1 0 0 1 0 2H7v13a1 1 0 0 1-2 0V5Zm4 2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v11.5a1.5 1.5 0 0 1-2.098 1.356L16 18.382l-2.902 1.474A1.5 1.5 0 0 1 11 18.5Z"/>
+            </svg>
+          </span>
+          <span v-if="!isSidebarCollapsed" class="nav-text">知识库管理</span>
+        </button>
+        <button class="nav-btn" @click="goToAdmin" :title="isSidebarCollapsed ? '用户管理' : null">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M15 8a3 3 0 1 1-3-3a3 3 0 0 1 3 3Zm-9 9.25C6 14.679 8.686 13 12 13s6 1.679 6 4.25a.75.75 0 0 1-1.5 0C16.5 15.784 14.79 15 12 15s-4.5.784-4.5 2.25A.75.75 0 0 1 6 17.25Z"/>
+            </svg>
+          </span>
+          <span v-if="!isSidebarCollapsed" class="nav-text">用户管理</span>
+        </button>
+      </div>
+
+      <div class="admin-sidebar-footer">
+        <button class="nav-btn" @click="toggleUserCenter" :title="isSidebarCollapsed ? '用户中心' : null">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M12 12a4 4 0 1 0-4-4a4 4 0 0 0 4 4Zm0 2c-4.418 0-8 2.239-8 5a1 1 0 0 0 2 0c0-1.42 2.685-3 6-3s6 1.58 6 3a1 1 0 0 0 2 0c0-2.761-3.582-5-8-5Z"/>
+            </svg>
+          </span>
+          <span v-if="!isSidebarCollapsed" class="nav-text">用户中心</span>
+        </button>
+        <button class="nav-btn danger" @click="handleLogout" :title="isSidebarCollapsed ? '退出登录' : null">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M10 7a1 1 0 0 1 1-1h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6a1 1 0 1 1 0-2h6V8h-6a1 1 0 0 1-1-1Zm-1.293 3.293a1 1 0 0 1 0 1.414L7.414 13H15a1 1 0 1 1 0 2H7.414l1.293 1.293a1 1 0 0 1-1.414 1.414l-3-3a1 1 0 0 1 0-1.414l3-3a1 1 0 0 1 1.414 0Z"/>
+            </svg>
+          </span>
+          <span v-if="!isSidebarCollapsed" class="nav-text">退出登录</span>
+        </button>
+
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <h1 class="admin-title">知识库管理</h1>
     
     <!-- 知识库管理区域 -->
     <div class="kb-management">
@@ -31,7 +77,7 @@
           <div class="kb-card-content">
             <div class="kb-info">
               <div class="kb-icon">
-                <img src="@/assets/database-icon.png" alt="kb-icon"/>
+                <img src="@/assets/应用图标.png" alt="app-icon"/>
               </div>
               <div class="kb-name">{{ kb.kb_name }}</div>
             </div>
@@ -64,6 +110,7 @@
         :data="docs"
         size="small"
         stripe
+        :max-height="docTableHeight"
         style="width: 100%; margin-top: 16px"
       >
         <el-table-column prop="id" label="文档 ID" width="280" />
@@ -246,7 +293,56 @@
         <el-button @click="downloadSample">下载示例文件</el-button>
       </template>
     </el-dialog>
+    </main>
   </div>
+
+  <el-dialog
+    v-model="userCenterOpen"
+    title="用户中心"
+    width="520px"
+    align-center
+    destroy-on-close
+    class="user-center-dialog"
+    modal-class="user-center-modal"
+  >
+    <div class="user-center-content">
+      <div class="uc-header">
+        <div class="uc-avatar">
+          <span class="uc-avatar-icon">
+            {{ (currentUser?.username || 'U').charAt(0).toUpperCase() }}
+          </span>
+        </div>
+        <div class="uc-header-info">
+          <div class="uc-name">{{ currentUser?.username || '-' }}</div>
+          <div class="uc-role-badge">
+            {{ currentUser?.role === 'admin' ? '管理员' : '普通用户' }}
+          </div>
+        </div>
+      </div>
+      <div class="uc-divider"></div>
+      <div class="uc-grid">
+        <div class="uc-item">
+          <div class="uc-item-label">用户名</div>
+          <div class="uc-item-value">{{ currentUser?.username || '-' }}</div>
+        </div>
+        <div class="uc-item">
+          <div class="uc-item-label">角色</div>
+          <div class="uc-item-value">{{ currentUser?.role === 'admin' ? '管理员' : '普通用户' }}</div>
+        </div>
+        <div v-if="currentUser?.email" class="uc-item">
+          <div class="uc-item-label">邮箱</div>
+          <div class="uc-item-value">{{ currentUser.email }}</div>
+        </div>
+        <div v-if="currentUser?.id !== undefined" class="uc-item">
+          <div class="uc-item-label">用户 ID</div>
+          <div class="uc-item-value">{{ currentUser.id }}</div>
+        </div>
+      </div>
+    </div>
+    <template #footer>
+      <el-button type="primary" @click="userCenterOpen = false">关闭</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
@@ -255,11 +351,16 @@ import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
+import { getUser, logout } from '../api/auth';
 
 const KB_CACHE_KEY = 'rag_selected_kb';
+const SIDEBAR_COLLAPSED_KEY = 'admin_sidebar_collapsed';
 const route = useRoute();
 const router = useRouter();
 const API_BASE = import.meta.env.VITE_PY_API_BASE_URL || 'http://127.0.0.1:8000';
+const isSidebarCollapsed = ref(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) !== '0');
+const currentUser = ref(getUser() || null);
+const userCenterOpen = ref(false);
 
 // 知识库管理
 const kbList = ref([]);
@@ -272,6 +373,8 @@ const loading = ref(false);
 const page = ref(1);
 const pageSize = ref(20);
 const total = ref(0);
+// 控制仅“数据表格区域”滚动，避免文档管理区其他区域一起滚动
+const docTableHeight = 360;
 
 // 对话框
 const viewVisible = ref(false);
@@ -346,8 +449,20 @@ watch(selectedKb, (val) => {
 });
 
 // 导航
-function goToChat() {
-  router.push('/chat');
+function goToManage() { router.push('/manage'); }
+function goToAdmin() { router.push('/admin'); }
+function toggleSidebar() {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value;
+  localStorage.setItem(SIDEBAR_COLLAPSED_KEY, isSidebarCollapsed.value ? '1' : '0');
+}
+function toggleUserCenter() {
+  currentUser.value = getUser() || null;
+  userCenterOpen.value = !userCenterOpen.value;
+}
+function handleLogout() {
+  logout();
+  userCenterOpen.value = false;
+  router.replace('/chat');
 }
 
 // 知识库管理函数
@@ -646,36 +761,376 @@ function downloadSample() {
 
 <style scoped>
 .page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  height: 100%;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #e5e7eb;
+  background: #0b0b0b;
 }
 
-.top-actions {
+.admin-shell {
   display: flex;
+  gap: 18px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.admin-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: #141414;
+  border-radius: 14px;
+  border: 1px solid #2a2a2a;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: width 0.2s ease, padding 0.2s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.admin-sidebar.collapsed {
+  width: 60px;
+  padding: 10px 8px;
+}
+
+.admin-sidebar-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.admin-sidebar-title {
+  margin-left: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #e5e7eb;
+  white-space: nowrap;
+}
+
+.admin-sidebar:not(.collapsed) .admin-sidebar-header {
   justify-content: flex-start;
-  margin-bottom: 20px;
+}
+
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid #2f2f2f;
+  background: #1b1b1b;
+  color: #e5e7eb;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-btn:hover {
+  background: #262626;
+  border-color: #3a3a3a;
+}
+
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.nav-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #2f2f2f;
+  background: #1b1b1b;
+  color: #e5e7eb;
+  cursor: pointer;
+}
+.admin-sidebar.collapsed .nav-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+.nav-btn:hover {
+  background: #262626;
+  border-color: #3a3a3a;
+}
+
+.nav-btn.danger {
+  border-color: #5a2e2e;
+  background: #3a2020;
+  color: #fca5a5;
+}
+
+.nav-btn.danger:hover {
+  background: #4a2424;
+}
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+}
+.nav-text {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-main {
+  flex: 1;
+  min-width: 0;
+  background: #111111;
+  border-radius: 14px;
+  border: 1px solid #2a2a2a;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.admin-topbar {
+  display: none;
+}
+
+.admin-title {
+  margin: 0 0 16px 0;
+  color: #f3f4f6;
+}
+
+.admin-topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #343434;
+  background: #202020;
+  color: #e5e7eb;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.topbar-btn:hover {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+.topbar-btn.danger {
+  border-color: #5a2e2e;
+  background: #3a2020;
+  color: #fca5a5;
+}
+
+.topbar-btn.danger:hover {
+  background: #4a2424;
+}
+
+.btn-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-text {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.user-center-pop {
+  position: absolute;
+  left: 12px;
+  bottom: 120px;
+  z-index: 20;
+}
+
+.user-center-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.uc-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 8px;
+}
+
+.uc-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #1f2937;
+}
+
+.uc-avatar-icon {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e5e7eb;
+}
+
+.uc-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.uc-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f9fafb;
+}
+
+.uc-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: #1f2937;
+  color: #9ca3af;
+}
+
+.uc-divider {
+  height: 1px;
+  background: #262626;
+  margin: 6px 0 4px;
+}
+
+.uc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  padding-top: 8px;
+}
+
+.uc-item {
+  border: 1px solid #262626;
+  border-radius: 10px;
+  background: #111111;
+  padding: 10px 12px;
+  min-width: 0;
+}
+
+.uc-item-label {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-bottom: 6px;
+}
+
+.uc-item-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e5e7eb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 弹窗与管理端风格对齐 */
+:deep(.user-center-dialog.el-dialog) {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+:deep(.user-center-modal) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:deep(.user-center-modal .el-overlay-dialog) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:deep(.user-center-dialog .el-dialog__header) {
+  margin-right: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+:deep(.user-center-dialog .el-dialog__title) {
+  color: #f3f4f6;
+  font-weight: 700;
+}
+
+:deep(.user-center-dialog .el-dialog__body) {
+  padding: 16px;
+}
+
+:deep(.user-center-dialog .el-dialog__footer) {
+  padding: 12px 16px 16px;
+  border-top: 1px solid #2a2a2a;
+}
+
+.uc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 2px;
+  border-bottom: 1px solid #262626;
+}
+.uc-row:last-of-type {
+  border-bottom: none;
+}
+.uc-label {
+  font-size: 12px;
+  color: #a3a3a3;
+}
+.uc-value {
+  font-size: 13px;
+  color: #e5e7eb;
+  font-weight: 600;
+}
+.uc-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
 }
 
 h1 {
   font-size: 32px;
   font-weight: 600;
   margin: 0 0 24px 0;
-  color: #303133;
+  color: #f3f4f6;
 }
 
 h2 {
   font-size: 20px;
   font-weight: 600;
   margin: 0;
-  color: #303133;
+  color: #f3f4f6;
 }
 
 /* 知识库管理区域 */
 .kb-management {
-  background: white;
-  border: 1px solid #e4e7ed;
+  background: #141414;
+  border: 1px solid #2a2a2a;
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 24px;
@@ -703,18 +1158,19 @@ h2 {
 .kb-card {
   cursor: pointer;
   transition: all 0.3s;
-  border: 2px solid #e4e7ed;
+  border: 1px solid #2b2b2b;
+  background: #171717;
 }
 
 .kb-card:hover {
-  border-color: #409eff;
+  border-color: #3b82f6;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .kb-card.active {
-  border-color: #409eff;
-  background: #f0f9ff;
+  border-color: #3b82f6;
+  background: #1a2230;
 }
 
 .kb-card-content {
@@ -733,7 +1189,7 @@ h2 {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #eef2f7;
+  background-color: #222222;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -750,13 +1206,13 @@ h2 {
 .kb-name {
   font-size: 16px;
   font-weight: 500;
-  color: #303133;
+  color: #e5e7eb;
 }
 
 /* 文档管理区域 */
 .doc-management {
-  background: white;
-  border: 1px solid #e4e7ed;
+  background: #141414;
+  border: 1px solid #2a2a2a;
   border-radius: 12px;
   padding: 24px;
 }
@@ -779,11 +1235,21 @@ h2 {
   justify-content: flex-end;
 }
 
+/* 文档表格：需要时可以滚动，但隐藏滚动条本身 */
+:deep(.doc-management .el-table__body-wrapper) {
+  scrollbar-width: none; /* Firefox */
+}
+
+:deep(.doc-management .el-table__body-wrapper::-webkit-scrollbar) {
+  width: 0;
+  height: 0;
+}
+
 /* 空状态 */
 .empty-state {
   text-align: center;
   padding: 80px 20px;
-  color: #909399;
+  color: #9ca3af;
 }
 
 .empty-icon {
@@ -813,7 +1279,7 @@ h2 {
 .upload-stage {
   margin-top: 10px;
   text-align: center;
-  color: #606266;
+  color: #a3a3a3;
   font-size: 14px;
 }
 
@@ -824,7 +1290,7 @@ h2 {
 }
 
 .el-upload__text {
-  color: #606266;
+  color: #d1d5db;
   font-size: 14px;
 }
 
@@ -840,7 +1306,7 @@ h2 {
 
 .example-section h4 {
   margin: 20px 0 10px 0;
-  color: #303133;
+  color: #e5e7eb;
   font-size: 15px;
   font-weight: 600;
 }
@@ -851,13 +1317,13 @@ h2 {
 
 .example-desc {
   margin: 5px 0 10px 0;
-  color: #909399;
+  color: #9ca3af;
   font-size: 13px;
 }
 
 .code-block {
-  background-color: #f5f7fa;
-  border: 1px solid #e4e7ed;
+  background-color: #111111;
+  border: 1px solid #2a2a2a;
   border-radius: 4px;
   padding: 12px;
   font-family: 'Courier New', Courier, monospace;
@@ -866,7 +1332,7 @@ h2 {
   overflow-x: auto;
   white-space: pre-wrap;
   word-wrap: break-word;
-  color: #606266;
+  color: #d1d5db;
   margin: 0;
 }
 
@@ -874,7 +1340,7 @@ h2 {
   display: flex;
   gap: 20px;
   padding: 20px;
-  background-color: #f5f7fa;
+  background-color: #111111;
   border-radius: 4px;
   margin-top: 10px;
 }
@@ -890,14 +1356,14 @@ h2 {
 
 .word-info p {
   margin: 8px 0;
-  color: #606266;
+  color: #c7c7c7;
   font-size: 14px;
 }
 
 .word-info ul {
   margin: 5px 0;
   padding-left: 20px;
-  color: #606266;
+  color: #c7c7c7;
   font-size: 13px;
 }
 

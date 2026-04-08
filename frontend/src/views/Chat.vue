@@ -1,21 +1,77 @@
 <template>
-  <div class="chat-page">
+  <div class="chat-page" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
     <div class="left-panel">
       <div class="panel-header">
-        <h2>设置</h2>
-        <el-button type="primary" plain @click="goToKb">知识库管理</el-button>
+        <div v-if="!isSidebarCollapsed" class="panel-header-left">
+          <img src="@/assets/应用图标.png" alt="app-icon" class="panel-logo" />
+          <h2>万年AI</h2>
+        </div>
+        <button class="sidebar-toggle-btn" @click="toggleSidebar" :title="isSidebarCollapsed ? '展开侧栏' : '收起侧栏'">
+          <span class="sidebar-toggle-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+              <!-- 展开状态：显示“收起侧栏” -->
+              <path class="icon-collapse" fill="currentColor"
+                d="M14.71 6.71a1 1 0 0 1 0 1.41L10.83 12l3.88 3.88a1 1 0 1 1-1.42 1.41l-4.58-4.58a1 1 0 0 1 0-1.42l4.58-4.58a1 1 0 0 1 1.42 0Z"
+              />
+              <!-- 收起状态默认：系统/菜单图标 -->
+              <path class="icon-system" fill="currentColor"
+                d="M4 7a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm0 5a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 4a1 1 0 1 0 0 2h14a1 1 0 1 0 0-2H5Z"
+              />
+              <!-- 收起状态悬停：显示“打开侧栏” -->
+              <path class="icon-expand" fill="currentColor"
+                d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.42 1.41l4.58-4.58a1 1 0 0 0 0-1.42l-4.58-4.58a1 1 0 0 0-1.42 0Z"
+              />
+            </svg>
+          </span>
+        </button>
       </div>
 
       <div class="panel-section">
+        <h3>会话</h3>
+        <div class="session-buttons session-actions" style="margin-top: 0;">
+          <button class="menu-action-btn" @click="handleQuickNewSession" :title="isSidebarCollapsed ? '新聊天' : null">
+            <div class="flex items-center justify-center [opacity:var(--menu-item-icon-opacity,1)] icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" class="icon">
+                <path
+                  fill="currentColor"
+                  d="M11 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1Z"
+                />
+              </svg>
+            </div>
+            <span v-if="!isSidebarCollapsed">新聊天</span>
+          </button>
+          <button class="menu-action-btn" @click="toggleSearchInput" :title="isSidebarCollapsed ? '搜索聊天' : null">
+            <div class="flex items-center justify-center [opacity:var(--menu-item-icon-opacity,1)] icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" class="icon">
+                <path
+                  fill="currentColor"
+                  d="M10.5 3a7.5 7.5 0 1 1 4.596 13.43l3.737 3.737a1 1 0 0 1-1.414 1.414l-3.737-3.737A7.5 7.5 0 0 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11a5.5 5.5 0 0 0 0-11Z"
+                />
+              </svg>
+            </div>
+            <span v-if="!isSidebarCollapsed">搜索聊天</span>
+          </button>
+        </div>
+        <el-input
+          v-if="showSearchInput && !isSidebarCollapsed"
+          class="chat-search-input"
+          v-model="chatSearchKeyword"
+          placeholder="搜索聊天"
+          clearable
+          style="margin-top: 10px"
+        />
+      </div>
+
+      <div class="panel-section" v-if="canShowKbSection && !isSidebarCollapsed">
         <h3>知识库</h3>
-        <div class="switch-item">
+        <div v-if="canShowAdminControls" class="switch-item">
           <span>使用知识库</span>
           <el-switch v-model="useKb" />
         </div>
         <el-select
           v-model="selectedKb"
           placeholder="选择知识库"
-          :disabled="!useKb"
+          :disabled="canShowAdminControls && !useKb"
         >
           <el-option
             v-for="kb in kbList"
@@ -26,7 +82,7 @@
         </el-select>
       </div>
 
-      <div class="panel-section" v-if="getToken()">
+      <div class="panel-section" v-if="isLoggedIn && !isSidebarCollapsed">
         <h3>会话管理</h3>
         <el-select
           v-model="currentSessionId"
@@ -34,7 +90,7 @@
           @change="handleSessionChange"
         >
           <el-option
-            v-for="s in sessions"
+            v-for="s in filteredSessions"
             :key="s.session_id"
             :label="s.title || '新会话'"
             :value="s.session_id"
@@ -53,7 +109,7 @@
         </div>
       </div>
 
-      <div class="panel-section">
+      <div class="panel-section" v-if="canShowAdminControls && !isSidebarCollapsed">
         <h3>问答模式</h3>
         <el-select v-model="llmBackend" placeholder="LLM后端">
           <el-option label="Ollama" value="ollama" />
@@ -65,7 +121,7 @@
         </div>
       </div>
 
-      <div class="panel-section">
+      <div class="panel-section" v-if="canShowAdminControls && !isSidebarCollapsed">
         <h3>调试</h3>
         <div class="switch-item">
           <span>调试模式</span>
@@ -74,31 +130,54 @@
       </div>
     </div>
 
-    <div class="chat-main">
-      <div class="chat-header">
+    <div class="right-panel">
+      <div class="chat-nav">
+        <div class="top-nav">
+          <div class="top-nav-left">
+            <template v-if="isLoggedIn">
+              <router-link to="/chat">知识库问答</router-link>
+              <router-link to="/manage">知识库管理</router-link>
+              <router-link v-if="isAdmin" to="/admin">用户管理</router-link>
+            </template>
+          </div>
+          <div class="top-nav-right">
+            <div v-if="isLoggedIn" class="user-section">
+              <span class="user-info">
+                {{ currentUser?.username }}
+                <span v-if="isAdmin" class="admin-badge">管理员</span>
+              </span>
+              <button class="btn-logout" @click="handleLogout">退出</button>
+            </div>
+            <div v-else class="auth-buttons">
+              <button class="btn-login" @click="showLoginModal = true">登录</button>
+              <button class="btn-register" @click="showRegisterModal = true">注册</button>
+            </div>
+          </div>
+        </div>
+        <div class="chat-header">
         <h1>{{ currentSessionId ? ((sessions.find(s => s.session_id === currentSessionId) || {}).title || '新会话') : '知识库问答' }}</h1>
         <transition name="fade">
           <div v-if="currentProgress.visible" class="progress-badge" :class="progressBadgeClass">
             <span class="progress-text">{{ currentProgress.stage }}: {{ currentProgress.message }}</span>
           </div>
         </transition>
+        </div>
       </div>
 
+      <div class="chat-main">
       <div class="messages" ref="messagesRef">
-        <div v-if="!history.length" class="empty-tip">
-          <div class="empty-icon">
-            <img src="@/assets/icon-placeholder.png" alt="bot-icon" style="width: 48px; height: 48px;"/>
-          </div>
-          <p>你好！请在下方输入问题开始对话。</p>
-          <p v-if="!useKb">当前为“无知识库”模式，将由大模型直接回答。</p>
-          <p v-else-if="!selectedKb">请先在左侧选择一个知识库。</p>
+        <div v-if="!filteredHistory.length" class="empty-tip">
+          <p v-if="chatSearchKeyword">没有搜索到匹配聊天。</p>
+          <p v-else>你好！请在下方输入问题开始对话。</p>
+          <p v-if="!useKb">向 AI 聊天机器人发送消息即表示，你同意我们的条款并已阅读我们的隐私政策。</p>
+          <p v-else-if="isLoggedIn && !selectedKb">请先在左侧选择一个知识库。</p>
         </div>
         
-        <template v-for="(item, idx) in history" :key="idx">
+        <template v-for="(item, idx) in filteredHistory" :key="idx">
           <!-- 用户问题 -->
           <div class="message-item user-message">
             <div class="avatar-icon-container">
-              <img src="@/assets/user-icon.png" alt="user-icon"/>
+              <img src="@/assets/应用图标.png" alt="app-icon"/>
             </div>
             <div class="message-content-wrapper question-content">
               {{ item.question }}
@@ -108,7 +187,7 @@
           <!-- AI 回答 -->
           <div class="message-item ai-message">
             <div class="avatar-icon-container">
-              <img src="@/assets/ai-icon.png" alt="ai-icon"/>
+              <img src="@/assets/应用图标.png" alt="app-icon"/>
             </div>
             <div class="message-content-wrapper answer-wrapper">
               <div v-if="getAnswerMode(item)" class="main-title" :class="`mode-${getAnswerMode(item)}`">
@@ -138,9 +217,9 @@
 
               <div v-if="item.use_kb && !item.pending" class="references">
                 <div class="references-header" style="display: flex; justify-content: space-between; align-items: center;">
-                  <el-button size="small" plain @click="toggleReferences(idx)">
+                  <el-button size="small" plain @click="toggleReferencesByItem(item)">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                      <img src="@/assets/icon-placeholder.png" alt="ref-icon" style="width: 24px; height: 24px;"/>
+                      <img src="@/assets/应用图标.png" alt="app-icon" style="width: 24px; height: 24px;"/>
                       <span>{{ item.referencesExpanded ? '收起' : '引用来源' }}</span>
                     </div>
                   </el-button>
@@ -254,6 +333,45 @@
           发送
         </el-button>
       </div>
+      </div>
+    </div>
+
+    <div v-if="showLoginModal" class="modal-overlay" @click.self="showLoginModal = false">
+      <div class="modal-content">
+        <button class="modal-close-btn" @click="showLoginModal = false">×</button>
+        <h2>登录</h2>
+        <form @submit.prevent="handleLogin">
+          <div class="form-group">
+            <label for="chat-login-username">用户名</label>
+            <input id="chat-login-username" v-model="loginForm.username" type="text" required>
+          </div>
+          <div class="form-group">
+            <label for="chat-login-password">密码</label>
+            <input id="chat-login-password" v-model="loginForm.password" type="password" required>
+          </div>
+          <p v-if="loginError" class="error-message">{{ loginError }}</p>
+          <button type="submit" class="btn-submit">登录</button>
+        </form>
+      </div>
+    </div>
+
+    <div v-if="showRegisterModal" class="modal-overlay" @click.self="showRegisterModal = false">
+      <div class="modal-content">
+        <button class="modal-close-btn" @click="showRegisterModal = false">×</button>
+        <h2>注册</h2>
+        <form @submit.prevent="handleRegister">
+          <div class="form-group">
+            <label for="chat-register-username">用户名</label>
+            <input id="chat-register-username" v-model="registerForm.username" type="text" required>
+          </div>
+          <div class="form-group">
+            <label for="chat-register-password">密码</label>
+            <input id="chat-register-password" v-model="registerForm.password" type="password" required>
+          </div>
+          <p v-if="registerError" class="error-message">{{ registerError }}</p>
+          <button type="submit" class="btn-submit">注册</button>
+        </form>
+      </div>
     </div>
   </div>
 </template>
@@ -266,6 +384,11 @@ import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import {
   getToken,
+  getUser,
+  login,
+  register,
+  logout,
+  clearInvalidToken,
   createChatSession,
   listChatSessions,
   deleteChatSession,
@@ -295,6 +418,114 @@ const llmBackend = ref('zhipu');
 const useKb = ref(true);
 const useSmartRouter = ref(false);
 const debugMode = ref(false);
+const chatSearchKeyword = ref('');
+const showSearchInput = ref(false);
+const showLoginModal = ref(false);
+const showRegisterModal = ref(false);
+const loginForm = ref({ username: '', password: '' });
+const registerForm = ref({ username: '', password: '' });
+const loginError = ref('');
+const registerError = ref('');
+const isSidebarCollapsed = ref(false);
+const token = ref(getToken());
+const currentUser = ref(getUser() || null);
+
+const userRole = computed(() => currentUser.value?.role || 'guest');
+const isLoggedIn = computed(() => !!token.value);
+const isAdmin = computed(() => userRole.value === 'admin');
+const canShowKbSection = computed(() => isLoggedIn.value);
+const canShowAdminControls = computed(() => isAdmin.value);
+
+const filteredSessions = computed(() => {
+  const keyword = chatSearchKeyword.value.trim().toLowerCase();
+  if (!keyword) return sessions.value;
+  return sessions.value.filter((s) => (s.title || '新会话').toLowerCase().includes(keyword));
+});
+
+const filteredHistory = computed(() => {
+  const keyword = chatSearchKeyword.value.trim().toLowerCase();
+  if (!keyword) return history.value;
+  return history.value.filter((item) => {
+    const q = (item.question || '').toLowerCase();
+    const a = (item.rawAnswer || item.answer || '').toLowerCase();
+    return q.includes(keyword) || a.includes(keyword);
+  });
+});
+
+function refreshAuthState() {
+  clearInvalidToken();
+  token.value = getToken();
+  currentUser.value = getUser() || null;
+}
+
+async function handleLogin() {
+  try {
+    await login(loginForm.value.username, loginForm.value.password);
+    refreshAuthState();
+    if (isAdmin.value) {
+      showLoginModal.value = false;
+      loginError.value = '';
+      loginForm.value = { username: '', password: '' };
+      router.replace('/manage');
+      return;
+    }
+    showLoginModal.value = false;
+    loginError.value = '';
+    loginForm.value = { username: '', password: '' };
+    await loadKbList();
+    await loadSessions();
+    if (!currentSessionId.value) {
+      await handleNewSession();
+    } else {
+      await loadHistoryFromServer();
+    }
+  } catch (error) {
+    loginError.value = error.message || '登录失败，请检查您的凭据';
+  }
+}
+
+async function handleRegister() {
+  try {
+    await register(registerForm.value.username, registerForm.value.password);
+    await login(registerForm.value.username, registerForm.value.password);
+    refreshAuthState();
+    if (isAdmin.value) {
+      showRegisterModal.value = false;
+      registerError.value = '';
+      registerForm.value = { username: '', password: '' };
+      router.replace('/manage');
+      return;
+    }
+    showRegisterModal.value = false;
+    registerError.value = '';
+    registerForm.value = { username: '', password: '' };
+    await loadKbList();
+    await loadSessions();
+    if (!currentSessionId.value) {
+      await handleNewSession();
+    } else {
+      await loadHistoryFromServer();
+    }
+  } catch (error) {
+    registerError.value = error.message || '注册失败，请稍后再试';
+  }
+}
+
+function handleLogout() {
+  logout();
+  refreshAuthState();
+  history.value = [];
+  sessions.value = [];
+  currentSessionId.value = '';
+  selectedKb.value = '';
+  useKb.value = false;
+  try {
+    // 清空本地所有聊天历史缓存
+    localStorage.removeItem(HISTORY_STORAGE_KEY);
+  } catch (e) {
+    console.warn('清理本地聊天历史失败', e);
+  }
+}
 
 // 进度推送系统
 const progressEventSource = ref(null);
@@ -311,6 +542,11 @@ function _historyKey() {
 
 function loadHistoryFromStorage() {
   try {
+    // 未登录时不展示本地历史
+    if (!isLoggedIn.value) {
+      history.value = [];
+      return;
+    }
     const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
     const data = raw ? JSON.parse(raw) : {};
     const key = _historyKey();
@@ -365,6 +601,8 @@ async function loadHistoryFromServer() {
 
 function saveHistoryToStorage() {
   try {
+    // 未登录时不持久化历史
+    if (!isLoggedIn.value) return;
     const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
     const data = raw ? JSON.parse(raw) : {};
     const key = _historyKey();
@@ -473,6 +711,13 @@ function formatScore(score) {
 function toggleReferences(index) {
   if (history.value[index]) {
     history.value[index].referencesExpanded = !history.value[index].referencesExpanded;
+  }
+}
+
+function toggleReferencesByItem(item) {
+  const index = history.value.indexOf(item);
+  if (index >= 0) {
+    toggleReferences(index);
   }
 }
 
@@ -725,12 +970,25 @@ async function loadKbList() {
 }
 
 onMounted(async () => {
+  refreshAuthState();
+  // 管理员账号不进入问答页（双保险：除路由守卫外，页面加载时也重定向）
+  if (isAdmin.value) {
+    router.replace('/manage');
+    return;
+  }
   const cached = localStorage.getItem(KB_CACHE_KEY);
   if (cached) selectedKb.value = cached;
   const cachedBackend = localStorage.getItem(LLM_BACKEND_CACHE_KEY);
   if (cachedBackend === 'ollama' || cachedBackend === 'zhipu') llmBackend.value = cachedBackend;
   const cachedUseKb = localStorage.getItem(USE_KB_CACHE_KEY);
   if (cachedUseKb === '0' || cachedUseKb === '1') useKb.value = cachedUseKb === '1';
+  if (!isLoggedIn.value) {
+    useKb.value = false;
+    debugMode.value = false;
+  } else if (!isAdmin.value) {
+    useKb.value = true;
+    debugMode.value = false;
+  }
   await loadKbList();
   loadHistoryFromStorage();
 
@@ -771,8 +1029,46 @@ watch(useKb, (val) => {
   loadHistoryFromStorage();
 });
 
+watch([isLoggedIn, isAdmin], ([loggedIn, admin]) => {
+  if (!loggedIn) {
+    useKb.value = false;
+    debugMode.value = false;
+    useSmartRouter.value = false;
+    return;
+  }
+  if (!admin) {
+    useKb.value = true;
+    debugMode.value = false;
+  }
+});
+
 function goToKb() {
   router.push({ path: '/kb', query: selectedKb.value ? { kb_id: selectedKb.value } : {} });
+}
+
+async function handleQuickNewSession() {
+  chatSearchKeyword.value = '';
+  showSearchInput.value = false;
+  if (isLoggedIn.value) {
+    await handleNewSession();
+    return;
+  }
+  history.value = [];
+  saveHistoryToStorage();
+}
+
+function toggleSearchInput() {
+  showSearchInput.value = !showSearchInput.value;
+  if (!showSearchInput.value) {
+    chatSearchKeyword.value = '';
+  }
+}
+
+function toggleSidebar() {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value;
+  if (isSidebarCollapsed.value) {
+    showSearchInput.value = false;
+  }
 }
 
 const handleSend = async () => {
@@ -946,21 +1242,113 @@ const handleSend = async () => {
   gap: 18px;
   padding: 8px;
   box-sizing: border-box;
-  background: linear-gradient(180deg, #f7f9fc 0%, #f3f6fb 100%);
+  background: #0b0b0b;
+}
+
+.top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.top-nav-left,
+.top-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.top-nav-left a {
+  color: #a3a3a3;
+  text-decoration: none;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 13px;
+}
+
+.top-nav-left a:hover,
+.top-nav-left a.router-link-active {
+  background: #1a1a1a;
+  color: #f5f5f5;
+  border-color: #303030;
+}
+
+.auth-buttons {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: #131313;
+  border: 1px solid #2a2a2a;
+}
+
+.btn-login,
+.btn-register,
+.btn-logout {
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #d1d5db;
+}
+
+.btn-login:hover,
+.btn-register:hover,
+.btn-logout:hover {
+  background: #1c1c1c;
+  color: #fff;
+}
+
+.user-section {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  background: #131313;
+}
+
+.user-info {
+  color: #d1d5db;
+  font-size: 13px;
+  padding: 0 8px;
+}
+
+.admin-badge {
+  margin-left: 6px;
+  background: #2a2216;
+  border: 1px solid #4b3a1f;
+  color: #fbbf24;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
 }
 
 /* Left Panel Styling */
 .left-panel {
   width: 280px;
   flex-shrink: 0;
-  background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+  background: #141414;
   border-radius: 14px;
-  border: 1px solid #e8edf5;
+  border: 1px solid #2a2a2a;
   padding: 16px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  box-shadow: 0 8px 24px rgba(54, 93, 142, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: width 0.2s ease, padding 0.2s ease;
+}
+
+.sidebar-collapsed .left-panel {
+  width: 60px;
+  padding: 10px 8px;
 }
 
 .panel-header {
@@ -969,20 +1357,51 @@ const handleSend = async () => {
   align-items: center;
   padding-bottom: 12px;
   margin-bottom: 12px;
-  border-bottom: 1px solid #ebf0f6;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.sidebar-collapsed .panel-header {
+  justify-content: center;
+}
+
+.sidebar-collapsed .panel-header {
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: none;
+}
+
+/* 收起侧栏：顶部按钮与图标按钮同规格，整体更“方” */
+.sidebar-collapsed .sidebar-toggle-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.panel-header-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.panel-logo {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  object-fit: cover;
 }
 
 .panel-header h2 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #25324a;
+  color: #f3f4f6;
+  line-height: 1;
 }
 
 .panel-section {
   padding-bottom: 16px;
   margin-bottom: 16px;
-  border-bottom: 1px solid #f1f4f9;
+  border-bottom: 1px solid #272727;
 }
 .panel-section:last-child {
   border-bottom: none;
@@ -993,7 +1412,18 @@ const handleSend = async () => {
   margin: 0 0 12px 0;
   font-size: 14px;
   font-weight: 600;
-  color: #4c5c78;
+  color: #d1d5db;
+}
+
+.sidebar-collapsed .panel-section h3 {
+  display: none;
+}
+
+/* 收起侧栏：减少分区间距，避免“空白块” */
+.sidebar-collapsed .panel-section {
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: none;
 }
 
 .panel-section .el-select,
@@ -1006,8 +1436,140 @@ const handleSend = async () => {
   gap: 10px;
   margin-top: 12px;
 }
+.session-actions {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-collapsed .session-actions {
+  gap: 10px;
+  align-items: center;
+}
+
 .session-buttons .el-button {
   flex: 1;
+}
+
+.menu-action-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #343434;
+  background: #202020;
+  color: #e5e7eb;
+  cursor: pointer;
+}
+
+.menu-action-btn:hover {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+.menu-action-btn .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar-collapsed .menu-action-btn {
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 12px;
+}
+
+/* 收起侧栏：按钮外观更轻，减少视觉噪音 */
+.sidebar-collapsed .menu-action-btn,
+.sidebar-collapsed .sidebar-toggle-btn {
+  border-color: #2f2f2f;
+  background: #1b1b1b;
+}
+
+.sidebar-collapsed .menu-action-btn:hover,
+.sidebar-collapsed .sidebar-toggle-btn:hover {
+  background: #262626;
+  border-color: #3a3a3a;
+}
+
+.sidebar-collapsed .menu-action-btn .icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* 收起侧栏：保证顶部按钮与下方按钮同一垂直中线 */
+.sidebar-collapsed .menu-action-btn,
+.sidebar-collapsed .sidebar-toggle-btn {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sidebar-toggle-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #343434;
+  background: #202020;
+  color: #e5e7eb;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-toggle-btn:hover {
+  background: #2a2a2a;
+}
+
+.sidebar-toggle-icon {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.12s ease;
+  opacity: 1;
+}
+
+/* 默认隐藏收起状态的“打开侧栏” */
+.icon-expand {
+  opacity: 0;
+}
+
+/* 展开状态：只显示“收起侧栏” */
+.icon-collapse {
+  opacity: 1;
+}
+.icon-system {
+  opacity: 0;
+}
+
+/* 收起状态：默认显示系统图标；悬停侧栏时切换为“打开侧栏” */
+.sidebar-collapsed .icon-collapse {
+  opacity: 0;
+}
+.sidebar-collapsed .icon-system {
+  opacity: 0;
+}
+.sidebar-collapsed .icon-expand {
+  opacity: 1;
+}
+
+.icon-collapse,
+.icon-system,
+.icon-expand {
+  transition: opacity 0.12s ease;
+}
+
+/* 图标大小与位置统一 */
+.sidebar-toggle-icon svg {
+  display: block;
+  width: 20px;
+  height: 20px;
 }
 
 .switch-item {
@@ -1018,30 +1580,134 @@ const handleSend = async () => {
 }
 .switch-item span {
   font-size: 14px;
-  color: #344054;
+  color: #c4c4c4;
 }
 
 
 /* Chat Main Area */
-.chat-main {
+.right-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  background: #111111;
   border-radius: 14px;
-  border: 1px solid #e8edf5;
-  box-shadow: 0 10px 30px rgba(54, 93, 142, 0.1);
+  border: 1px solid #2a2a2a;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.38);
+}
+
+.chat-nav {
+  flex-shrink: 0;
+}
+
+.chat-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-search-input :deep(.el-input__wrapper) {
+  background: #1f2937 !important;
+  border: 1px solid #374151 !important;
+  box-shadow: none !important;
+}
+
+.chat-search-input :deep(.el-input__inner) {
+  color: #f3f4f6 !important;
+}
+
+.chat-search-input :deep(.el-input__inner::placeholder) {
+  color: #d1d5db !important;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  position: relative;
+  background: #171717;
+  border: 1px solid #2a2a2a;
+  padding: 22px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  color: #f5f5f5;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #a3a3a3;
+  font-size: 13px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid #2f2f2f;
+  background: #0f0f0f;
+  color: #f3f4f6;
+  box-sizing: border-box;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #3a3a3a;
+  border-radius: 10px;
+  background: #222222;
+  color: #f9fafb;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.error-message {
+  color: #f87171;
+  margin-bottom: 12px;
+  font-size: 13px;
 }
 
 .cot-steps .step-item {
-  border: 1px solid #e0e0e0;
+  border: 1px solid #2f2f2f;
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
-  background-color: #ffffff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  background-color: #171717;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
   transition: box-shadow 0.3s ease;
 }
 .cot-steps .step-item:hover {
@@ -1049,12 +1715,12 @@ const handleSend = async () => {
 }
 
 .reference-item {
-  border: 1px solid #e0e0e0;
+  border: 1px solid #2f2f2f;
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 12px;
-  background-color: #ffffff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  background-color: #171717;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   transition: box-shadow 0.3s ease;
 }
 .reference-item:hover {
@@ -1077,8 +1743,8 @@ const handleSend = async () => {
 }
 
 .reference-index {
-  background: #eef2ff;
-  color: #4f46e5;
+  background: #20242d;
+  color: #cfd8ff;
   padding: 2px 10px;
   border-radius: 999px;
   font-size: 12px;
@@ -1087,8 +1753,8 @@ const handleSend = async () => {
 }
 
 .reference-meta-inline {
-  background: #f0f2f5;
-  color: #606266;
+  background: #262626;
+  color: #a3a3a3;
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 12px;
@@ -1097,7 +1763,7 @@ const handleSend = async () => {
 }
 
 .reference-title {
-  color: #2d3f5f;
+  color: #e5e7eb;
   font-size: 13px;
   font-weight: 700;
   overflow: hidden;
@@ -1107,7 +1773,7 @@ const handleSend = async () => {
 
 .reference-content {
   font-size: 14px;
-  color: #2d3748;
+  color: #d1d5db;
   line-height: 1.65;
   white-space: pre-wrap;
   word-break: break-word;
@@ -1122,8 +1788,8 @@ const handleSend = async () => {
 }
 
 .reference-tags {
-  background: #f6f7fb;
-  color: #606266;
+  background: #242424;
+  color: #bfbfbf;
   padding: 2px 10px;
   border-radius: 999px;
   font-size: 12px;
@@ -1144,7 +1810,7 @@ const handleSend = async () => {
 
 .step-content {
   font-size: 14px;
-  color: #333;
+  color: #d1d5db;
   line-height: 1.6;
 }
 
@@ -1160,7 +1826,7 @@ const handleSend = async () => {
 
 .chat-header {
   padding: 16px 20px;
-  border-bottom: 1px solid #eaf0f6;
+  border-bottom: 1px solid #2a2a2a;
   flex-shrink: 0;
   display: flex;
   justify-content: space-between;
@@ -1170,7 +1836,7 @@ const handleSend = async () => {
   margin: 0;
   font-size: 21px;
   font-weight: 600;
-  color: #1f2a40;
+  color: #f3f4f6;
 }
 
 /* Messages Area */
@@ -1207,7 +1873,7 @@ const handleSend = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #edf2f7;
+  border: 1px solid #2c2c2c;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 .avatar-icon-container img {
@@ -1235,13 +1901,13 @@ const handleSend = async () => {
 }
 
 .answer-wrapper {
-  background: linear-gradient(180deg, #f8fbff 0%, #f3f7fd 100%);
-  color: #2d3748;
+  background: #181818;
+  color: #d1d5db;
   width: 100%;
   border-radius: 18px;
   border-top-left-radius: 4px;
   padding: 12px 16px;
-  border: 1px solid #e5edf8;
+  border: 1px solid #2e2e2e;
 }
 
 .answer-mode {
@@ -1253,7 +1919,7 @@ const handleSend = async () => {
 .main-title {
   font-size: 14px;
   font-weight: 600;
-  color: #2d3f5f;
+  color: #d1d5db;
   margin-bottom: 12px;
   display: inline-flex;
   align-items: center;
@@ -1263,25 +1929,25 @@ const handleSend = async () => {
 }
 
 .main-title.mode-cot {
-  background: #ecf8f1;
-  color: #128a57;
-  border-color: #bdebd2;
+  background: #1d2a22;
+  color: #7dd3a8;
+  border-color: #2f4b3d;
 }
 
 .main-title.mode-simple {
-  background: #eef5ff;
-  color: #2d67d6;
-  border-color: #cfe0ff;
+  background: #1f2530;
+  color: #93c5fd;
+  border-color: #324355;
 }
 
 .sub-title {
   font-size: 14px;
   font-weight: 600;
-  color: #606266;
+  color: #d1d5db;
   margin-top: 16px;
   margin-bottom: 10px;
   padding-bottom: 6px;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid #323232;
 }
 
 .references-header .toggle-icon {
@@ -1294,7 +1960,7 @@ const handleSend = async () => {
 .empty-tip {
   margin: auto;
   text-align: center;
-  color: #909399;
+  color: #9ca3af;
 }
 .empty-icon {
   font-size: 48px;
@@ -1304,11 +1970,11 @@ const handleSend = async () => {
 /* Input Area */
 .input-area {
   padding: 16px 20px;
-  border-top: 1px solid #eaf0f6;
+  border-top: 1px solid #2a2a2a;
   display: flex;
   gap: 12px;
   align-items: center;
-  background-color: #fdfefe;
+  background-color: #121212;
   border-bottom-left-radius: 12px;
   border-bottom-right-radius: 12px;
 }
